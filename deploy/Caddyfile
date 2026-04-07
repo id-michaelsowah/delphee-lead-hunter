@@ -1,0 +1,11 @@
+# Delphee Lead Hunter — Caddy reverse proxy with auto-HTTPS
+#
+# Replace "leads.example.com" with your actual domain.
+# Caddy will automatically provision and renew a Let's Encrypt SSL certificate.
+#
+# For IP-only access (no domain), replace the domain with ":80" and
+# remove the caddy service from vps-docker-compose.yml instead.
+
+leads.example.com {
+    reverse_proxy app:8000
+}

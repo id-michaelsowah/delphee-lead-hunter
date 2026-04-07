@@ -1,0 +1,36 @@
+{
+  "West Africa": [
+    "Ghana", "Nigeria", "Senegal", "Côte d'Ivoire", "Burkina Faso", "Mali", "Niger",
+    "Togo", "Benin", "Guinea", "Guinea-Bissau", "Mauritania", "Gambia", "Liberia", "Sierra Leone"
+  ],
+  "East Africa": [
+    "Kenya", "Tanzania", "Uganda", "Ethiopia", "Rwanda", "Djibouti", "Eritrea", "Burundi"
+  ],
+  "Central Africa": [
+    "Cameroon", "Chad", "Gabon", "Democratic Republic of Congo", "Republic of Congo",
+    "Equatorial Guinea", "São Tomé and Príncipe"
+  ],
+  "Southern Africa": [
+    "South Africa", "Zambia", "Zimbabwe", "Mozambique", "Malawi", "Madagascar",
+    "Angola", "Botswana", "Namibia", "Lesotho", "Swaziland"
+  ],
+  "North Africa & Middle East": [
+    "Egypt", "Morocco", "Tunisia", "Jordan", "Lebanon", "Algeria", "Libya",
+    "Saudi Arabia", "United Arab Emirates", "Qatar", "Kuwait", "Oman", "Yemen", "Syria"
+  ],
+  "South & Southeast Asia": [
+    "Bangladesh", "Nepal", "Cambodia", "Vietnam",
+    "Sri Lanka", "Pakistan", "Indonesia", "Philippines", "Myanmar", "Thailand", "India"
+  ],
+  "Central Asia & Caucasus": [
+    "Georgia", "Armenia", "Uzbekistan", "Kyrgyzstan", "Azerbaijan"
+  ],
+  "Latin America & Caribbean": [
+    "Bolivia", "Honduras", "Guatemala", "Paraguay", "Ecuador", "Colombia", "Peru",
+    "El Salvador", "Nicaragua", "Costa Rica"
+  ],
+  "Eastern Europe": [
+    "Moldova", "Albania", "Kosovo", "North Macedonia", "Ukraine",
+    "Bosnia and Herzegovina", "Serbia", "Montenegro"
+  ]
+}

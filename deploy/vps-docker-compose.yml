@@ -1,0 +1,55 @@
+version: '3.8'
+
+# VPS production deployment — runs app + PostgreSQL + Caddy (auto-HTTPS)
+# Usage: docker compose -f deploy/vps-docker-compose.yml up -d --build
+#
+# For IP-only access (no domain), remove the `caddy` service and
+# change the `app` ports to "80:8000".
+
+services:
+  app:
+    build: ..
+    expose:
+      - "8000"
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://delphee:${DB_PASSWORD:-changeme}@db:5432/delphee
+      DB_BACKEND: sql
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: delphee
+      POSTGRES_USER: delphee
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U delphee"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    restart: always
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
