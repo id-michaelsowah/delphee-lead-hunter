@@ -15,7 +15,7 @@ client = genai.Client(api_key=settings.gemini_api_key)
 DISCOVERY_PROMPT = """Search the web for IFRS 9 and ECL-related business opportunities \
 in {countries}. Look for: tenders, RFQs, procurement notices, regulatory deadlines, \
 news about banks needing ECL tools, consulting opportunities.
-
+{language_instruction}
 For each opportunity found, extract:
 - title: short descriptive title
 - institution: name of the bank, MFI, DFI, or regulatory body
@@ -28,6 +28,36 @@ For each opportunity found, extract:
 - contact_info: email/phone/contact person if available, else null
 
 Return ONLY a valid JSON array. No markdown fences, no preamble, no explanation."""
+
+# Countries where searching in a local language surfaces significantly more results
+COUNTRY_LANGUAGES: dict[str, list[str]] = {
+    # French — West Africa
+    "Senegal": ["French"], "Côte d'Ivoire": ["French"], "Burkina Faso": ["French"],
+    "Mali": ["French"], "Niger": ["French"], "Togo": ["French"], "Benin": ["French"],
+    "Guinea": ["French"], "Guinea-Bissau": ["French"], "Mauritania": ["French"],
+    # French — East Africa
+    "Rwanda": ["French"], "Djibouti": ["French"], "Burundi": ["French"],
+    # French — Central Africa
+    "Cameroon": ["French"], "Chad": ["French"], "Gabon": ["French"],
+    "Democratic Republic of Congo": ["French"], "Republic of Congo": ["French"],
+    # French — Southern Africa
+    "Madagascar": ["French"],
+    # French — North Africa
+    "Morocco": ["French"], "Tunisia": ["French"], "Algeria": ["French"],
+    "Lebanon": ["French"],
+    # Spanish — Latin America
+    "Bolivia": ["Spanish"], "Honduras": ["Spanish"], "Guatemala": ["Spanish"],
+    "Paraguay": ["Spanish"], "Ecuador": ["Spanish"], "Colombia": ["Spanish"],
+    "Peru": ["Spanish"], "El Salvador": ["Spanish"], "Nicaragua": ["Spanish"],
+    "Costa Rica": ["Spanish"],
+    # Russian — Central Asia & Caucasus
+    "Georgia": ["Russian"], "Armenia": ["Russian"], "Uzbekistan": ["Russian"],
+    "Kyrgyzstan": ["Russian"], "Azerbaijan": ["Russian"],
+    # Russian — Eastern Europe
+    "Moldova": ["Russian"], "Ukraine": ["Russian"],
+    "Bosnia and Herzegovina": ["Russian"], "Serbia": ["Russian"],
+    "Montenegro": ["Russian"],
+}
 
 BATCH_SIZE = 3
 BATCH_DELAY = 1.5  # seconds between batches
@@ -54,7 +84,17 @@ async def discover_opportunities(
         if on_progress:
             await on_progress(f"Searching: {country_str}", idx + 1, len(batches))
 
-        prompt = DISCOVERY_PROMPT.format(countries=country_str)
+        # Collect additional languages needed for this batch
+        languages: set[str] = set()
+        for country in batch:
+            languages.update(COUNTRY_LANGUAGES.get(country, []))
+        if languages:
+            lang_list = ", ".join(sorted(languages))
+            language_instruction = f"\nAlso search in {lang_list} for locally-published opportunities in these countries — many tenders and regulatory notices are not published in English.\n"
+        else:
+            language_instruction = ""
+
+        prompt = DISCOVERY_PROMPT.format(countries=country_str, language_instruction=language_instruction)
         parsed = await _search_with_retry(prompt, country_str)
         all_results.extend(parsed)
         logger.info("Batch %d/%d: found %d raw results for %s", idx + 1, len(batches), len(parsed), country_str)
