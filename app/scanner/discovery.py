@@ -12,16 +12,34 @@ logger = logging.getLogger(__name__)
 
 client = genai.Client(api_key=settings.gemini_api_key)
 
-DISCOVERY_PROMPT = """Search the web for IFRS 9 and ECL-related business opportunities \
+DISCOVERY_PROMPT_EN = """Search the web for IFRS 9 and ECL-related business opportunities \
 in {countries}. Look for: tenders, RFQs, procurement notices, regulatory deadlines, \
 news about banks needing ECL tools, consulting opportunities.
-{language_instruction}
+
 For each opportunity found, extract:
 - title: short descriptive title
 - institution: name of the bank, MFI, DFI, or regulatory body
 - country: country name
 - type: one of tender, rfq, news, regulation, consulting, partnership
 - summary: 2-3 sentence description of the opportunity
+- published_date: ISO date if found (YYYY-MM-DD), else null
+- deadline: ISO date if found (YYYY-MM-DD), else null
+- source_url: direct URL to the opportunity
+- contact_info: email/phone/contact person if available, else null
+
+Return ONLY a valid JSON array. No markdown fences, no preamble, no explanation."""
+
+DISCOVERY_PROMPT_LOCAL = """Search the web in {language} for IFRS 9 and ECL-related business \
+opportunities in {countries}. Focus specifically on locally-published sources: government \
+procurement portals, central bank notices, local tender boards, and regional financial \
+regulatory announcements. Many of these are only published in {language}.
+
+For each opportunity found, extract:
+- title: short descriptive title (translate to English)
+- institution: name of the bank, MFI, DFI, or regulatory body
+- country: country name
+- type: one of tender, rfq, news, regulation, consulting, partnership
+- summary: 2-3 sentence description in English
 - published_date: ISO date if found (YYYY-MM-DD), else null
 - deadline: ISO date if found (YYYY-MM-DD), else null
 - source_url: direct URL to the opportunity
@@ -63,11 +81,10 @@ BATCH_SIZE = 3
 BATCH_DELAY = 1.5  # seconds between batches
 RETRY_DELAYS = [2, 4, 8]  # exponential backoff on 429
 
-# Model fallback order — tries each in sequence if quota is exhausted
+# Model fallback order — tries each in sequence if quota or availability fails.
 GEMINI_MODELS = [
     "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-lite",
 ]
 
 
@@ -84,20 +101,29 @@ async def discover_opportunities(
         if on_progress:
             await on_progress(f"Searching: {country_str}", idx + 1, len(batches))
 
-        # Collect additional languages needed for this batch
-        languages: set[str] = set()
-        for country in batch:
-            languages.update(COUNTRY_LANGUAGES.get(country, []))
-        if languages:
-            lang_list = ", ".join(sorted(languages))
-            language_instruction = f"\nAlso search in {lang_list} for locally-published opportunities in these countries — many tenders and regulatory notices are not published in English.\n"
-        else:
-            language_instruction = ""
+        # 1. English search for the whole batch
+        prompt_en = DISCOVERY_PROMPT_EN.format(countries=country_str)
+        parsed_en = await _search_with_retry(prompt_en, f"{country_str} [EN]")
+        all_results.extend(parsed_en)
+        logger.info("Batch %d/%d EN: found %d results for %s", idx + 1, len(batches), len(parsed_en), country_str)
 
-        prompt = DISCOVERY_PROMPT.format(countries=country_str, language_instruction=language_instruction)
-        parsed = await _search_with_retry(prompt, country_str)
-        all_results.extend(parsed)
-        logger.info("Batch %d/%d: found %d raw results for %s", idx + 1, len(batches), len(parsed), country_str)
+        # 2. Per-language searches for countries that have local languages
+        # Group countries by language so each language gets one focused request
+        language_countries: dict[str, list[str]] = {}
+        for country in batch:
+            for lang in COUNTRY_LANGUAGES.get(country, []):
+                language_countries.setdefault(lang, []).append(country)
+
+        for language, lang_batch in language_countries.items():
+            lang_country_str = ", ".join(lang_batch)
+            prompt_local = DISCOVERY_PROMPT_LOCAL.format(
+                language=language,
+                countries=lang_country_str,
+            )
+            parsed_local = await _search_with_retry(prompt_local, f"{lang_country_str} [{language[:2].upper()}]")
+            all_results.extend(parsed_local)
+            logger.info("Batch %d/%d %s: found %d results for %s", idx + 1, len(batches), language, len(parsed_local), lang_country_str)
+            await asyncio.sleep(BATCH_DELAY)
 
         if idx < len(batches) - 1:
             await asyncio.sleep(BATCH_DELAY)
@@ -149,6 +175,9 @@ async def _try_model(prompt: str, label: str, model: str) -> list[dict] | None:
                     await asyncio.sleep(delay)
                 else:
                     return None  # Signal caller to try next model
+            elif "404" in err_str:
+                logger.warning("Model %s not available for %s (404), trying next model...", model, label)
+                return None  # Signal caller to try next model
             else:
                 logger.error("Discovery error on %s for %s: %s", model, label, e)
                 return []  # Non-quota error — don't try other models
