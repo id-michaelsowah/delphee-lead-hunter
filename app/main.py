@@ -19,8 +19,12 @@ _APP_PASSWORD = (settings.app_password or "").strip()
 
 
 async def password_middleware(request: Request, call_next):
-    """Require APP_PASSWORD via HTTP Basic Auth if the env var is set."""
-    if not _APP_PASSWORD or request.url.path == "/health":
+    """Require APP_PASSWORD via HTTP Basic Auth for API routes only."""
+    path = request.url.path
+
+    # Only protect API and WebSocket routes — frontend assets are public
+    # (the API itself is what contains the data; the HTML/JS shell is harmless)
+    if not _APP_PASSWORD or not (path.startswith("/api") or path.startswith("/ws")):
         return await call_next(request)
 
     auth = request.headers.get("Authorization", "")
@@ -29,14 +33,17 @@ async def password_middleware(request: Request, call_next):
         try:
             decoded = base64.b64decode(auth[6:]).decode()
             _, _, password = decoded.partition(":")
-            if secrets.compare_digest(password, _APP_PASSWORD):
-                return await call_next(request)
         except Exception:
             pass
+        else:
+            if secrets.compare_digest(password, _APP_PASSWORD):
+                return await call_next(request)
 
     return Response(
         status_code=401,
-        headers={"WWW-Authenticate": 'Basic realm="Delphee Lead Hunter"'},
+        content="Unauthorized",
+        # Omit WWW-Authenticate so the browser does not show its native dialog.
+        # The React frontend handles auth with a custom password screen.
     )
 
 

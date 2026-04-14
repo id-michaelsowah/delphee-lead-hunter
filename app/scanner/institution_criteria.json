@@ -1,0 +1,58 @@
+{
+  "_note": "Criteria used by Claude to identify and shortlist target institutions per lead. Must-haves are hard filters. Ranking boosts affect prioritisation but do not exclude.",
+
+  "must_have": {
+    "ownership": {
+      "description": "Institution must have international investors, lenders, or shareholders — including DFI-backed (IFC, FMO, DEG, AfDB, EBRD, etc.) and any foreign equity or debt stakeholders",
+      "exclude": [
+        "Fully state-owned institutions with no international stakeholders",
+        "Subsidiaries or members of a larger banking group where the parent would make tooling decisions centrally"
+      ]
+    },
+    "asset_size": {
+      "description": "Minimum total assets of EUR 20 million",
+      "minimum_eur": 20000000
+    },
+    "regulation": {
+      "description": "Must be a regulated financial institution — preference for licensed commercial banks and regulated MFIs",
+      "preferred_types": ["commercial bank", "microfinance institution", "development finance institution"],
+      "exclude": ["unregulated lenders", "insurance companies", "pure deposit-takers with no lending book"]
+    },
+    "business_model": {
+      "description": "Must have a lending-heavy business model with retail, SME, or microfinance exposure — not purely corporate or wholesale lenders",
+      "exclude": ["pure corporate banks", "pure wholesale lenders"]
+    }
+  },
+
+  "ranking_boosts": {
+    "big4_audit": {
+      "description": "Institution audited by a Big 4 firm (Deloitte, PwC, EY, KPMG) — indicates governance maturity and readiness for IFRS compliance tooling",
+      "firms": ["Deloitte", "PwC", "Ernst & Young", "KPMG"]
+    },
+    "ifrs9_regulatory_pressure": {
+      "description": "Institution is in a country where IFRS 9 adoption is newly mandated or a compliance deadline is approaching — increases urgency of ECL tooling need"
+    },
+    "dfi_backed": {
+      "description": "DFI investors (IFC, FMO, DEG, AfDB, EBRD, Proparco, BIO, etc.) often require IFRS 9 compliance as a loan covenant — strong signal of tooling need",
+      "known_dfis": ["IFC", "FMO", "DEG", "AfDB", "EBRD", "Proparco", "BIO", "ADB", "OPIC", "DFC", "CDC", "BII"]
+    }
+  },
+
+  "output_fields": [
+    "institution_name",
+    "country",
+    "type",
+    "ownership_summary",
+    "international_stakeholders",
+    "estimated_asset_size",
+    "asset_size_currency",
+    "business_model_summary",
+    "lending_focus",
+    "auditor",
+    "ifrs9_status",
+    "big4_audited",
+    "dfi_backed",
+    "source_url",
+    "relevance_notes"
+  ]
+}

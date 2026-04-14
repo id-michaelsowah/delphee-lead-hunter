@@ -10,6 +10,7 @@ class FirestoreRepository:
         self._db = firestore.AsyncClient()
         self._scans = self._db.collection("scan_runs")
         self._leads = self._db.collection("leads")
+        self._targets = self._db.collection("target_institutions")
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -134,6 +135,34 @@ class FirestoreRepository:
         key = key_map.get(sort_by, key_map["relevance_score"])
         results.sort(key=key, reverse=reverse)
         return results[offset: offset + limit]
+
+    # ── Target Institutions ────────────────────────────────────────────────────
+
+    async def create_targets_batch(self, targets: list[dict]) -> list[dict]:
+        now = datetime.utcnow()
+        batch = self._db.batch()
+        results = []
+        for target in targets:
+            target.setdefault("id", str(uuid.uuid4()))
+            target.setdefault("discovered_at", now)
+            batch.set(self._targets.document(target["id"]), target)
+            results.append(target)
+        await batch.commit()
+        return results
+
+    async def get_targets_for_lead(self, lead_id: str) -> list[dict]:
+        query = self._targets.where("lead_id", "==", lead_id)
+        docs = await query.get()
+        return [self._doc_to_dict(d) for d in docs]
+
+    async def list_targets(self, tier: str | None = None, country: str | None = None) -> list[dict]:
+        query = self._targets
+        if tier:
+            query = query.where("market_tier", "==", tier)
+        if country:
+            query = query.where("country", "==", country)
+        docs = await query.limit(1000).get()
+        return [self._doc_to_dict(d) for d in docs]
 
     async def get_existing_lead_titles(self, limit: int = 500) -> list[str]:
         query = self._leads.order_by("first_seen_at", direction=firestore.Query.DESCENDING).limit(limit)

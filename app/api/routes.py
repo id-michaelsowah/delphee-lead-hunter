@@ -14,6 +14,7 @@ from app.models import (
     ScanRunDetailResponse,
     ScanRunResponse,
     StartScanRequest,
+    TargetInstitutionResponse,
     UpdateLeadRequest,
 )
 from app.scanner.regions import REGIONS, get_regions
@@ -161,6 +162,46 @@ async def cancel_scan(scan_id: str):
     })
 
 
+# ── Target Institutions ───────────────────────────────────────────────────────
+
+@router.post("/leads/{lead_id}/targets", response_model=list[TargetInstitutionResponse], tags=["targets"])
+async def find_targets(lead_id: str, background_tasks: BackgroundTasks):
+    """Trigger on-demand institution discovery for a lead."""
+    repo = get_repository()
+    lead = await repo.get_lead(lead_id)
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    # Return existing targets immediately if already discovered
+    existing = await repo.get_targets_for_lead(lead_id)
+    if existing:
+        return existing
+
+    # Run discovery synchronously (user is waiting for results)
+    from app.scanner.institutions import find_target_institutions
+    targets = await find_target_institutions(lead)
+    if targets:
+        await repo.create_targets_batch(targets)
+    return targets
+
+
+@router.get("/leads/{lead_id}/targets", response_model=list[TargetInstitutionResponse], tags=["targets"])
+async def get_targets(lead_id: str):
+    """Get previously discovered target institutions for a lead."""
+    repo = get_repository()
+    return await repo.get_targets_for_lead(lead_id)
+
+
+@router.get("/targets", response_model=list[TargetInstitutionResponse], tags=["targets"])
+async def list_all_targets(
+    tier: Optional[str] = Query(None, pattern="^(core|expansion|greenfield)$"),
+    country: Optional[str] = None,
+):
+    """List all discovered target institutions, optionally filtered by tier or country."""
+    repo = get_repository()
+    return await repo.list_targets(tier=tier, country=country)
+
+
 # ── Regions ───────────────────────────────────────────────────────────────────
 
 @router.get("/regions", tags=["config"])
@@ -183,6 +224,7 @@ async def get_usage(month: Optional[str] = None):
 async def run_scan_pipeline(scan_id: str, regions: list[str]):
     """Full pipeline: discover → analyze → dedup → store."""
     from app.scanner.discovery import discover_opportunities
+    from app.scanner.resolve_urls import resolve_urls
     from app.scanner.analysis import analyze_opportunities
     from app.scanner.dedup import deduplicate
 
@@ -204,6 +246,10 @@ async def run_scan_pipeline(scan_id: str, regions: list[str]):
 
         raw = await discover_opportunities(countries, on_progress=discovery_progress)
         logger.info("Scan %s: %d raw results discovered", scan_id, len(raw))
+
+        # ── Phase 1b: Resolve redirect URLs ───────────────────────────────
+        await send_progress(scan_id, "discovery", "Resolving source URLs...", len(countries), len(countries))
+        raw = await resolve_urls(raw)
 
         # ── Phase 2: Analysis (Claude) ─────────────────────────────────────
         async def analysis_progress(msg: str, current: int, total: int):

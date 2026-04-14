@@ -1,0 +1,47 @@
+{
+  "_note": "Core = prior IFRS 9 delivery + reference clients. Expansion = transferable capabilities, few prior projects. Greenfield = no prior engagement. Countries not listed default to greenfield.",
+
+  "core": [
+    "Ukraine",
+    "Azerbaijan",
+    "Kazakhstan"
+  ],
+
+  "expansion": [
+    "Afghanistan",
+    "Armenia",
+    "Botswana",
+    "Burkina Faso",
+    "Cambodia",
+    "Colombia",
+    "Democratic Republic of Congo",
+    "Costa Rica",
+    "Côte d'Ivoire",
+    "Ecuador",
+    "El Salvador",
+    "Ethiopia",
+    "Georgia",
+    "Ghana",
+    "Guatemala",
+    "Honduras",
+    "India",
+    "Indonesia",
+    "Jordan",
+    "Kenya",
+    "Kyrgyzstan",
+    "Mexico",
+    "Moldova",
+    "Namibia",
+    "Pakistan",
+    "Palestine",
+    "Panama",
+    "Peru",
+    "Philippines",
+    "Slovenia",
+    "South Africa",
+    "Tajikistan",
+    "Uganda",
+    "Uzbekistan",
+    "Zambia"
+  ]
+}

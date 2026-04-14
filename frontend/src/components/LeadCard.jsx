@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { findTargets } from '../api'
 
 const FRESHNESS_DOT = { active: '🟢', stale: '🟡', outdated: '🔴', expired: '⚫', unknown: '⚪' }
 
@@ -16,12 +17,68 @@ function ScoreBar({ score }) {
   )
 }
 
+const TIER_LABEL = { core: 'Core', expansion: 'Expansion', greenfield: 'Greenfield' }
+const TIER_COLOR = { core: '#15803d', expansion: '#0284c7', greenfield: '#6b7280' }
+
+function InstitutionCard({ inst }) {
+  return (
+    <div style={{
+      border: '1px solid #e5e7eb', borderRadius: 8, padding: '12px 14px',
+      marginBottom: 8, background: '#fafafa',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+        <span style={{ fontWeight: 600, fontSize: 13 }}>{inst.institution_name}</span>
+        <span style={{
+          fontSize: 11, fontWeight: 600, color: TIER_COLOR[inst.market_tier] || '#6b7280',
+          background: '#f3f4f6', borderRadius: 99, padding: '2px 8px',
+        }}>
+          {TIER_LABEL[inst.market_tier] || inst.market_tier}
+        </span>
+      </div>
+      <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+        {inst.country} · {(inst.type || '').replace(/_/g, ' ')}
+        {inst.estimated_asset_size && ` · ${inst.estimated_asset_size}`}
+        {inst.big4_audited && ' · Big 4 audited'}
+        {inst.dfi_backed && ' · DFI-backed'}
+      </div>
+      {inst.relevance_notes && (
+        <div style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>{inst.relevance_notes}</div>
+      )}
+      {inst.international_stakeholders?.length > 0 && (
+        <div style={{ fontSize: 11, color: '#6b7280' }}>
+          Stakeholders: {inst.international_stakeholders.join(', ')}
+        </div>
+      )}
+      {inst.source_url && (
+        <a href={inst.source_url} target="_blank" rel="noopener noreferrer"
+          style={{ fontSize: 11, color: '#4f46e5', display: 'block', marginTop: 4 }}>
+          Source →
+        </a>
+      )}
+    </div>
+  )
+}
+
 export default function LeadCard({ lead, showScanId = false, onStatusChange }) {
   const [expanded, setExpanded] = useState(false)
+  const [targets, setTargets] = useState(null)
+  const [loadingTargets, setLoadingTargets] = useState(false)
   const navigate = useNavigate()
   const dim = lead.freshness === 'expired' || lead.freshness === 'outdated'
   const freshKey = lead.freshness || 'unknown'
   const typeKey = (lead.type || 'news').toLowerCase().replace(/\s+/g, '')
+
+  const handleFindTargets = async () => {
+    setLoadingTargets(true)
+    try {
+      const results = await findTargets(lead.id)
+      setTargets(results)
+    } catch {
+      setTargets([])
+    } finally {
+      setLoadingTargets(false)
+    }
+  }
 
   return (
     <div className={`lead-card${dim ? ' dim' : ''}`}>
@@ -125,6 +182,29 @@ export default function LeadCard({ lead, showScanId = false, onStatusChange }) {
               <NotesEditor lead={lead} onSave={onStatusChange} />
             </div>
           )}
+
+          {/* Target Institutions */}
+          <div style={{ marginTop: 12, borderTop: '1px solid #e5e7eb', paddingTop: 12 }}>
+            {targets === null ? (
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={handleFindTargets}
+                disabled={loadingTargets}
+                style={{ fontSize: 12 }}
+              >
+                {loadingTargets ? '⏳ Finding targets...' : '🏦 Find Target Institutions'}
+              </button>
+            ) : targets.length === 0 ? (
+              <p style={{ fontSize: 12, color: '#6b7280' }}>No qualifying institutions found for this lead.</p>
+            ) : (
+              <>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                  Target Institutions ({targets.length})
+                </div>
+                {targets.map((inst, i) => <InstitutionCard key={i} inst={inst} />)}
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

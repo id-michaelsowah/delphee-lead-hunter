@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, Text, Float, JSON, ForeignKey
+from sqlalchemy import Column, String, Integer, DateTime, Text, Float, JSON, Boolean, ForeignKey
 from sqlalchemy.orm import DeclarativeBase
 from datetime import datetime
 from pydantic import BaseModel
@@ -51,6 +51,32 @@ class Lead(Base):
     notes = Column(Text, nullable=True)
 
 
+class TargetInstitution(Base):
+    __tablename__ = "target_institutions"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    lead_id = Column(String, ForeignKey("leads.id"))
+    scan_run_id = Column(String, ForeignKey("scan_runs.id"), nullable=True)
+    country = Column(String)
+    market_tier = Column(String)          # core, expansion, greenfield
+    institution_name = Column(String)
+    type = Column(String)                 # commercial_bank, microfinance_institution, etc.
+    ownership_summary = Column(Text, nullable=True)
+    international_stakeholders = Column(JSON, nullable=True)  # list of strings
+    dfi_backed = Column(Boolean, nullable=True)
+    estimated_asset_size = Column(String, nullable=True)
+    business_model_summary = Column(Text, nullable=True)
+    lending_focus = Column(JSON, nullable=True)               # list of strings
+    auditor = Column(String, nullable=True)
+    big4_audited = Column(Boolean, nullable=True)
+    ifrs9_status = Column(String, nullable=True)              # adopted, in_progress, not_yet, unknown
+    source_url = Column(String, nullable=True)
+    relevance_notes = Column(Text, nullable=True)
+    lead_title = Column(String, nullable=True)
+    lead_type = Column(String, nullable=True)
+    discovered_at = Column(DateTime, default=datetime.utcnow)
+
+
 # ── Pydantic Response Schemas ──────────────────────────────────────────────────
 
 class ScanRunResponse(BaseModel):
@@ -94,6 +120,32 @@ class LeadResponse(BaseModel):
 
 class ScanRunDetailResponse(ScanRunResponse):
     leads: List[LeadResponse] = []
+
+
+class TargetInstitutionResponse(BaseModel):
+    id: str
+    lead_id: Optional[str] = None
+    scan_run_id: Optional[str] = None
+    country: Optional[str] = None
+    market_tier: Optional[str] = None
+    institution_name: Optional[str] = None
+    type: Optional[str] = None
+    ownership_summary: Optional[str] = None
+    international_stakeholders: Optional[list] = None
+    dfi_backed: Optional[bool] = None
+    estimated_asset_size: Optional[str] = None
+    business_model_summary: Optional[str] = None
+    lending_focus: Optional[list] = None
+    auditor: Optional[str] = None
+    big4_audited: Optional[bool] = None
+    ifrs9_status: Optional[str] = None
+    source_url: Optional[str] = None
+    relevance_notes: Optional[str] = None
+    lead_title: Optional[str] = None
+    lead_type: Optional[str] = None
+    discovered_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
 
 
 class StartScanRequest(BaseModel):
