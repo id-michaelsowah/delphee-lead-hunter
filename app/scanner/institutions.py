@@ -40,8 +40,13 @@ def get_market_tier(country: str) -> str:
 DISCOVERY_PROMPT = """Search the web for regulated financial institutions in {country} \
 that may need IFRS 9 / ECL software. Focus on:
 - Licensed commercial banks and regulated microfinance institutions (MFIs)
-- Institutions with international investors, lenders, or shareholders (IFC, FMO, DEG, \
-AfDB, EBRD, Proparco, BIO, ADB, DFC, BII, or any foreign equity/debt stakeholders)
+- Institutions with any international investors, lenders, or shareholders, including: \
+multilateral DFIs (IFC, AfDB, EBRD, ADB, EIB); bilateral DFIs (FMO, DEG, Proparco, BIO, \
+DFC, BII, Norfund, Swedfund, OeEB, COFIDES); impact investors and development-focused PE \
+(BlueOrchard, responsAbility, Symbiotics, AbleNordic, BlueEarth Capital, Helios Investment \
+Partners, Amethis, Development Partners International, Investisseurs & Partenaires); \
+international commercial banks or foreign institutional investors holding equity or debt; \
+or any other foreign shareholder, lender, or guarantor
 - Institutions with retail, SME, or microfinance lending books
 - Central bank registry, DFI portfolio disclosures, annual reports, financial databases
 
@@ -50,7 +55,11 @@ For each institution found, extract:
 - type: one of commercial_bank, microfinance_institution, development_finance_institution, cooperative_bank
 - ownership_summary: brief description of ownership structure
 - international_stakeholders: list of known international investors or lenders
-- estimated_asset_size: total assets if available (e.g. "USD 120M") or null
+- estimated_asset_size: total assets expressed as both the original currency value AND its EUR equivalent \
+(e.g. "USD 120M (~EUR 110M)"). Search the institution's latest annual report, central bank registry, \
+MIX Market, financial databases, or any regulatory filing to find this figure. Use the current \
+approximate exchange rate to compute the EUR equivalent. If after searching you genuinely cannot \
+find any asset size data, set this to null — do not guess.
 - auditor: name of external auditor if available, else null
 - ifrs9_status: one of adopted, in_progress, not_yet, unknown
 - source_url: direct URL to the source of this information
@@ -107,14 +116,19 @@ A sales lead has been identified in {country}:
 - Relevance to Delphee: {relevance_reason}
 
 Below are raw institution records found via web search in {country}. \
-Your task: filter and rank these to return the TOP 3-5 most promising Delphee targets.
+Your task: filter and rank these to return the TOP 10 most promising Delphee targets.
 
 MUST-HAVE (hard filters — exclude institutions that fail any of these):
-1. Must have international investors, lenders, or shareholders (DFI-backed or any foreign \
-equity/debt stakeholders)
+1. Must have international investors, lenders, or shareholders — this includes multilateral DFIs \
+(IFC, AfDB, EBRD, ADB, EIB), bilateral DFIs (FMO, DEG, Proparco, BII, Norfund, Swedfund, OeEB), \
+impact investors (BlueOrchard, responsAbility, AbleNordic, BlueEarth Capital, Symbiotics), \
+development-focused private equity (Helios, Amethis, Development Partners International), \
+or any foreign equity/debt stakeholder
 2. Must NOT be fully state-owned with no international stakeholders
 3. Must NOT be a subsidiary or member of a larger banking group
-4. Total assets must be at least EUR 20 million equivalent
+4. Total assets must be at least EUR 20 million equivalent. The estimated_asset_size field should \
+include a EUR equivalent — use that for comparison. If asset size is null (not found), do not \
+automatically disqualify; use other signals to judge whether the institution is likely above the threshold.
 5. Must be a regulated licensed commercial bank or regulated MFI
 6. Must have a lending-heavy business model with retail, SME, or microfinance exposure \
 (exclude pure corporate/wholesale lenders)
@@ -127,7 +141,7 @@ RANKING BOOSTS (prefer but do not require):
 RAW INSTITUTION DATA:
 {raw_data}
 
-Return ONLY a valid JSON array of the top 3-5 qualifying institutions. \
+Return ONLY a valid JSON array of the top 10 qualifying institutions. \
 Each item must have ALL of these fields:
 - institution_name (string)
 - country (string — always "{country}")
@@ -144,7 +158,7 @@ Each item must have ALL of these fields:
 - source_url (string or null)
 - relevance_notes (string: 1-2 sentences on why this is a strong Delphee target)
 
-If fewer than 3 qualify, return only those that do. If none qualify, return [].
+If fewer than 10 qualify, return only those that do. If none qualify, return [].
 Return ONLY the JSON array. No markdown, no explanation."""
 
 
@@ -182,7 +196,7 @@ async def _claude_filter(raw: list[dict], lead: dict, country: str) -> list[dict
 # ── Public entry point ────────────────────────────────────────────────────────
 
 async def find_target_institutions(lead: dict) -> list[dict]:
-    """Gemini searches for institutions, Claude filters against criteria. Returns top 3-5."""
+    """Gemini searches for institutions, Claude filters against criteria. Returns top 10."""
     country = lead.get("country", "")
     if not country:
         return []
