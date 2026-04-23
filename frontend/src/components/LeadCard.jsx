@@ -186,14 +186,26 @@ export default function LeadCard({ lead, showScanId = false, onStatusChange }) {
           {/* Target Institutions */}
           <div style={{ marginTop: 12, borderTop: '1px solid #e5e7eb', paddingTop: 12 }}>
             {targets === null ? (
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={handleFindTargets}
-                disabled={loadingTargets}
-                style={{ fontSize: 12 }}
-              >
-                {loadingTargets ? '⏳ Finding targets...' : '🏦 Find Target Institutions'}
-              </button>
+              <div>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleFindTargets}
+                  disabled={loadingTargets}
+                  style={{ fontSize: 12 }}
+                >
+                  {loadingTargets ? 'Finding institutions...' : '🏦 Find Target Institutions'}
+                </button>
+                {loadingTargets && (
+                  <>
+                    <div className="target-loading-bar">
+                      <div className="target-loading-bar-fill" />
+                    </div>
+                    <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>
+                      Analysing the lead and identifying regulated institutions — this may take 15–30 seconds.
+                    </div>
+                  </>
+                )}
+              </div>
             ) : targets.length === 0 ? (
               <p style={{ fontSize: 12, color: '#6b7280' }}>No qualifying institutions found for this lead.</p>
             ) : (

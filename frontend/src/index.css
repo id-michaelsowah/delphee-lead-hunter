@@ -273,6 +273,21 @@ input, textarea, select { font-family: inherit; }
   100% { transform: translateX(350%); }
 }
 
+.target-loading-bar {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.target-loading-bar-fill {
+  height: 100%;
+  width: 30%;
+  background: #4f46e5;
+  border-radius: 99px;
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
+
 .scan-card-body { flex: 1; }
 .scan-card-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
 .scan-card-meta { font-size: 12px; color: #6b7280; }
