@@ -37,8 +37,12 @@ def get_market_tier(country: str) -> str:
 
 # ── Phase 1: Gemini discovers raw institution data via Google Search ──────────
 
-DISCOVERY_PROMPT = """Search the web for regulated financial institutions in {country} \
-that may need IFRS 9 / ECL software. Focus on:
+DISCOVERY_PROMPT = """Search the web thoroughly for regulated financial institutions in {country} \
+that may need IFRS 9 / ECL software. Your goal is to find AT LEAST 15-20 candidate institutions \
+— cast a wide net. Search multiple sources: the central bank registry, DFI portfolio pages \
+(IFC, FMO, AfDB, Norfund, etc.), MIX Market, financial databases, news articles, and annual \
+reports. Do not stop after finding a few obvious names — look for smaller or less prominent \
+institutions too. Focus on:
 - Licensed commercial banks and regulated microfinance institutions (MFIs)
 - Institutions with any international investors, lenders, or shareholders, including: \
 multilateral DFIs (IFC, AfDB, EBRD, ADB, EIB); bilateral DFIs (FMO, DEG, Proparco, BIO, \
@@ -209,6 +213,10 @@ async def find_target_institutions(lead: dict) -> list[dict]:
 
     # Phase 2: filter and rank
     institutions = await _claude_filter(raw, lead, country)
+
+    # Phase 3: resolve Gemini grounding redirect URLs before storage
+    from app.scanner.resolve_urls import resolve_urls
+    institutions = await resolve_urls(institutions)
 
     # Enrich with lead linkage, market tier, and lead summary fields
     tier = get_market_tier(country)
