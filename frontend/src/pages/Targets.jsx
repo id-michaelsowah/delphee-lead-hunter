@@ -76,10 +76,14 @@ function InstitutionRow({ inst, onUpdate }) {
           )}
 
           {inst.international_stakeholders?.length > 0 && (
-            <div style={{ fontSize: 11, color: '#6b7280' }}>
-              Stakeholders: {inst.international_stakeholders.join(', ')}
+            <div style={{ fontSize: 12, color: '#374151' }}>
+              <span style={{ color: '#0098E4', fontWeight: 600 }}>Stakeholders:</span> {inst.international_stakeholders.join(', ')}
             </div>
           )}
+
+          <div style={{ fontSize: 12, color: '#374151' }}>
+            <span style={{ color: '#0098E4', fontWeight: 600 }}>Auditor:</span> {inst.auditor || 'unknown'}
+          </div>
 
           {/* Status + Notes */}
           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -132,14 +136,13 @@ function InstitutionRow({ inst, onUpdate }) {
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, minWidth: 100 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, minWidth: 60 }}>
           {inst.source_url && (
             <a href={inst.source_url} target="_blank" rel="noopener noreferrer"
               style={{ fontSize: 11, color: '#4f46e5' }}>
               Source →
             </a>
           )}
-          <span style={{ fontSize: 11, color: '#6b7280' }}>Auditor: {inst.auditor || 'unknown'}</span>
         </div>
       </div>
     </div>
