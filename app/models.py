@@ -75,6 +75,10 @@ class TargetInstitution(Base):
     lead_title = Column(String, nullable=True)
     lead_type = Column(String, nullable=True)
     discovered_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String, default="New")   # New, Contacted, Qualified, Closed
+    notes = Column(Text, nullable=True)
+    status = Column(String, default="new")   # new, contacted, qualified, closed
+    notes = Column(Text, nullable=True)
 
 
 # ── Pydantic Response Schemas ──────────────────────────────────────────────────
@@ -144,8 +148,15 @@ class TargetInstitutionResponse(BaseModel):
     lead_title: Optional[str] = None
     lead_type: Optional[str] = None
     discovered_at: Optional[datetime] = None
+    status: str = "New"
+    notes: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class UpdateTargetRequest(BaseModel):
+    status: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class StartScanRequest(BaseModel):

@@ -155,6 +155,11 @@ class FirestoreRepository:
         docs = await query.get()
         return [self._doc_to_dict(d) for d in docs]
 
+    async def update_target(self, target_id: str, updates: dict) -> dict:
+        await self._targets.document(target_id).update(updates)
+        doc = await self._targets.document(target_id).get()
+        return self._doc_to_dict(doc)
+
     async def list_targets(self, tier: str | None = None, country: str | None = None) -> list[dict]:
         query = self._targets
         if tier:

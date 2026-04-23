@@ -16,6 +16,7 @@ from app.models import (
     StartScanRequest,
     TargetInstitutionResponse,
     UpdateLeadRequest,
+    UpdateTargetRequest,
 )
 from app.scanner.regions import REGIONS, get_regions
 from app.api.websocket import send_progress, send_complete, send_error
@@ -190,6 +191,14 @@ async def get_targets(lead_id: str):
     """Get previously discovered target institutions for a lead."""
     repo = get_repository()
     return await repo.get_targets_for_lead(lead_id)
+
+
+@router.patch("/targets/{target_id}", response_model=TargetInstitutionResponse, tags=["targets"])
+async def update_target(target_id: str, body: UpdateTargetRequest):
+    """Update status or notes on a target institution."""
+    repo = get_repository()
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    return await repo.update_target(target_id, updates)
 
 
 @router.get("/targets", response_model=list[TargetInstitutionResponse], tags=["targets"])

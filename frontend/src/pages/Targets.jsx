@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { listAllTargets } from '../api'
+import { listAllTargets, updateTarget } from '../api'
 
 const TIERS = ['core', 'expansion', 'greenfield']
 const TIER_LABEL = { core: 'Core Markets', expansion: 'Expansion Markets', greenfield: 'Greenfield Markets' }
@@ -12,7 +12,28 @@ const TIER_DESC = {
 const TIER_COLOR = { core: '#15803d', expansion: '#0284c7', greenfield: '#6b7280' }
 const TIER_BG = { core: '#f0fdf4', expansion: '#eff6ff', greenfield: '#f9fafb' }
 
-function InstitutionRow({ inst }) {
+const STATUS_OPTIONS = ['New', 'Contacted', 'Qualified', 'Closed']
+const STATUS_COLOR = { New: '#6b7280', Contacted: '#0284c7', Qualified: '#15803d', Closed: '#9333ea' }
+
+function InstitutionRow({ inst, onUpdate }) {
+  const [status, setStatus] = useState(inst.status || 'New')
+  const [notes, setNotes] = useState(inst.notes || '')
+  const [savingNotes, setSavingNotes] = useState(false)
+
+  const handleStatusChange = async (e) => {
+    const val = e.target.value
+    setStatus(val)
+    const updated = await updateTarget(inst.id, { status: val })
+    onUpdate(updated)
+  }
+
+  const handleNotesSave = async () => {
+    if (notes === (inst.notes || '')) return
+    setSavingNotes(true)
+    const updated = await updateTarget(inst.id, { notes }).finally(() => setSavingNotes(false))
+    onUpdate(updated)
+  }
+
   return (
     <div style={{
       border: '1px solid #e5e7eb', borderRadius: 8, padding: '14px 16px',
@@ -54,11 +75,43 @@ function InstitutionRow({ inst }) {
             <div style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>{inst.relevance_notes}</div>
           )}
 
-              {inst.international_stakeholders?.length > 0 && (
+          {inst.international_stakeholders?.length > 0 && (
             <div style={{ fontSize: 11, color: '#6b7280' }}>
               Stakeholders: {inst.international_stakeholders.join(', ')}
             </div>
           )}
+
+          {/* Status + Notes */}
+          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 11, color: '#6b7280' }}>Status:</span>
+              <select
+                value={status}
+                onChange={handleStatusChange}
+                style={{
+                  fontSize: 11, fontWeight: 600, border: '1px solid #e5e7eb',
+                  borderRadius: 6, padding: '2px 8px', color: STATUS_COLOR[status],
+                  background: '#fff', cursor: 'pointer',
+                }}
+              >
+                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              onBlur={handleNotesSave}
+              placeholder="Add notes..."
+              rows={2}
+              style={{
+                fontSize: 12, border: '1px solid #e5e7eb', borderRadius: 6,
+                padding: '6px 8px', resize: 'vertical', width: '100%',
+                color: '#374151', fontFamily: 'inherit',
+                outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            {savingNotes && <span style={{ fontSize: 11, color: '#9ca3af' }}>Saving...</span>}
+          </div>
 
           {/* Linked lead */}
           {inst.lead_title && (
@@ -93,7 +146,7 @@ function InstitutionRow({ inst }) {
   )
 }
 
-function TierSection({ tier, institutions }) {
+function TierSection({ tier, institutions, onUpdate }) {
   const [collapsed, setCollapsed] = useState(false)
   if (!institutions.length) return null
 
@@ -118,7 +171,9 @@ function TierSection({ tier, institutions }) {
         </div>
         <span style={{ fontSize: 16, color: '#6b7280' }}>{collapsed ? '▶' : '▼'}</span>
       </div>
-      {!collapsed && institutions.map((inst, i) => <InstitutionRow key={i} inst={inst} />)}
+      {!collapsed && institutions.map((inst) => (
+        <InstitutionRow key={inst.id} inst={inst} onUpdate={onUpdate} />
+      ))}
     </div>
   )
 }
@@ -131,6 +186,10 @@ export default function Targets() {
   useEffect(() => {
     listAllTargets().then(setTargets).catch(console.error).finally(() => setLoading(false))
   }, [])
+
+  const handleUpdate = (updated) => {
+    setTargets(prev => prev.map(t => t.id === updated.id ? updated : t))
+  }
 
   const countries = [...new Set(targets.map(t => t.country).filter(Boolean))].sort()
   const filtered = filterCountry ? targets.filter(t => t.country === filterCountry) : targets
@@ -178,7 +237,7 @@ export default function Targets() {
           </div>
 
           {TIERS.map(tier => (
-            <TierSection key={tier} tier={tier} institutions={byTier[tier]} />
+            <TierSection key={tier} tier={tier} institutions={byTier[tier]} onUpdate={handleUpdate} />
           ))}
         </>
       )}

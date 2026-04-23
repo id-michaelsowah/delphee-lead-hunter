@@ -188,6 +188,15 @@ class SQLRepository:
             )
             return [_row_to_dict(r) for r in result.scalars()]
 
+    async def update_target(self, target_id: str, updates: dict) -> dict:
+        async with _session_factory() as session:
+            await session.execute(
+                update(TargetInstitution).where(TargetInstitution.id == target_id).values(**updates)
+            )
+            await session.commit()
+            result = await session.execute(select(TargetInstitution).where(TargetInstitution.id == target_id))
+            return _row_to_dict(result.scalar_one())
+
     async def list_targets(self, tier: str | None = None, country: str | None = None) -> list[dict]:
         async with _session_factory() as session:
             query = select(TargetInstitution)

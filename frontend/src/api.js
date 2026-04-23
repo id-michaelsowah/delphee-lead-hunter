@@ -33,6 +33,7 @@ export const cancelScan = (id) => api.post(`/scans/${id}/cancel`).then(r => r.da
 export const findTargets = (leadId) => api.post(`/leads/${leadId}/targets`).then(r => r.data)
 export const getTargets = (leadId) => api.get(`/leads/${leadId}/targets`).then(r => r.data)
 export const listAllTargets = (params) => api.get('/targets', { params }).then(r => r.data)
+export const updateTarget = (id, body) => api.patch(`/targets/${id}`, body).then(r => r.data)
 export const exportLeadsUrl = (params) => {
   const pw = sessionStorage.getItem('app_password')
   const auth = pw ? '&_auth=' + encodeURIComponent(btoa(':' + pw)) : ''
