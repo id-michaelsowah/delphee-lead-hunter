@@ -27,17 +27,24 @@ async def password_middleware(request: Request, call_next):
     if not _APP_PASSWORD or not (path.startswith("/api") or path.startswith("/ws")):
         return await call_next(request)
 
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Basic "):
-        import base64
+    import base64
+
+    def _check_password(encoded: str) -> bool:
         try:
-            decoded = base64.b64decode(auth[6:]).decode()
+            decoded = base64.b64decode(encoded).decode()
             _, _, password = decoded.partition(":")
+            return secrets.compare_digest(password, _APP_PASSWORD)
         except Exception:
-            pass
-        else:
-            if secrets.compare_digest(password, _APP_PASSWORD):
-                return await call_next(request)
+            return False
+
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Basic ") and _check_password(auth[6:]):
+        return await call_next(request)
+
+    # Allow Basic Auth via query param for CSV downloads (browser <a download> can't set headers)
+    _auth = request.query_params.get("_auth", "")
+    if _auth and _check_password(_auth):
+        return await call_next(request)
 
     return Response(
         status_code=401,

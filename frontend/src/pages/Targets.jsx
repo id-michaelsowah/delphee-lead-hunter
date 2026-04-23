@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { listAllTargets, updateTarget } from '../api'
+import { listAllTargets, updateTarget, exportTargetsUrl } from '../api'
 
 const TIERS = ['core', 'expansion', 'greenfield']
 const TIER_LABEL = { core: 'Core Markets', expansion: 'Expansion Markets', greenfield: 'Greenfield Markets' }
@@ -231,9 +231,17 @@ export default function Targets() {
                 Clear
               </button>
             )}
-            <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 'auto' }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>
               {filtered.length} institution{filtered.length !== 1 ? 's' : ''} total
             </span>
+            <a
+              href={exportTargetsUrl({ country: filterCountry || undefined })}
+              download="delphee-targets.csv"
+              className="btn btn-secondary btn-sm"
+              style={{ marginLeft: 'auto' }}
+            >
+              Export CSV
+            </a>
           </div>
 
           {TIERS.map(tier => (

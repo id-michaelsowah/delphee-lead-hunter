@@ -77,8 +77,6 @@ class TargetInstitution(Base):
     discovered_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="New")   # New, Contacted, Qualified, Closed
     notes = Column(Text, nullable=True)
-    status = Column(String, default="new")   # new, contacted, qualified, closed
-    notes = Column(Text, nullable=True)
 
 
 # ── Pydantic Response Schemas ──────────────────────────────────────────────────

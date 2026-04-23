@@ -34,6 +34,13 @@ export const findTargets = (leadId) => api.post(`/leads/${leadId}/targets`).then
 export const getTargets = (leadId) => api.get(`/leads/${leadId}/targets`).then(r => r.data)
 export const listAllTargets = (params) => api.get('/targets', { params }).then(r => r.data)
 export const updateTarget = (id, body) => api.patch(`/targets/${id}`, body).then(r => r.data)
+export const exportTargetsUrl = (params) => {
+  const pw = sessionStorage.getItem('app_password')
+  const auth = pw ? '&_auth=' + encodeURIComponent(btoa(':' + pw)) : ''
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== ''))
+  return `/api/targets/export?${qs}${auth}`
+}
+
 export const exportLeadsUrl = (params) => {
   const pw = sessionStorage.getItem('app_password')
   const auth = pw ? '&_auth=' + encodeURIComponent(btoa(':' + pw)) : ''

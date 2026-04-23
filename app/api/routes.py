@@ -193,6 +193,40 @@ async def get_targets(lead_id: str):
     return await repo.get_targets_for_lead(lead_id)
 
 
+@router.get("/targets/export", tags=["targets"])
+async def export_targets(
+    tier: Optional[str] = Query(None, pattern="^(core|expansion|greenfield)$"),
+    country: Optional[str] = None,
+):
+    """Export all target institutions as a CSV download."""
+    repo = get_repository()
+    targets = await repo.list_targets(tier=tier, country=country)
+
+    output = io.StringIO()
+    fieldnames = [
+        "institution_name", "country", "market_tier", "type", "status", "notes",
+        "auditor", "dfi_backed", "big4_audited", "ifrs9_status", "estimated_asset_size",
+        "international_stakeholders", "lending_focus", "lead_title", "lead_type",
+        "relevance_notes", "source_url", "discovered_at",
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    for t in targets:
+        row = dict(t)
+        if isinstance(row.get("international_stakeholders"), list):
+            row["international_stakeholders"] = ", ".join(row["international_stakeholders"])
+        if isinstance(row.get("lending_focus"), list):
+            row["lending_focus"] = ", ".join(row["lending_focus"])
+        writer.writerow(row)
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=delphee-targets.csv"},
+    )
+
+
 @router.patch("/targets/{target_id}", response_model=TargetInstitutionResponse, tags=["targets"])
 async def update_target(target_id: str, body: UpdateTargetRequest):
     """Update status or notes on a target institution."""
