@@ -58,7 +58,12 @@ For each institution found, extract:
 - institution_name: full legal name
 - type: one of commercial_bank, microfinance_institution, development_finance_institution, cooperative_bank
 - ownership_summary: brief description of ownership structure
-- international_stakeholders: list of known international investors or lenders
+- shareholders: list of international entities that hold equity in this institution \
+(e.g. IFC equity stake, Norfund shareholding, foreign bank ownership). Search the annual \
+report shareholder register, central bank ownership disclosures, and DFI portfolio pages.
+- international_stakeholders: list of international entities that have a lending, guarantee, \
+or non-equity relationship with this institution (e.g. IFC loan, FMO credit line, EBRD guarantee). \
+Do NOT duplicate entities already listed in shareholders.
 - estimated_asset_size: total assets expressed as both the original currency value AND its EUR equivalent \
 (e.g. "USD 120M (~EUR 110M)"). Search the institution's latest annual report, central bank registry, \
 MIX Market, financial databases, or any regulatory filing to find this figure. Use the current \
@@ -151,7 +156,8 @@ Each item must have ALL of these fields:
 - country (string — always "{country}")
 - type (commercial_bank | microfinance_institution | development_finance_institution | cooperative_bank)
 - ownership_summary (string)
-- international_stakeholders (list of strings)
+- shareholders (list of strings — international equity investors/owners only)
+- international_stakeholders (list of strings — international lenders, guarantors, or non-equity stakeholders only; no overlap with shareholders)
 - dfi_backed (boolean)
 - estimated_asset_size (string or null)
 - business_model_summary (string: 1 sentence)

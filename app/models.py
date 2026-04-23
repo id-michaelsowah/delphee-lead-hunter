@@ -62,7 +62,8 @@ class TargetInstitution(Base):
     institution_name = Column(String)
     type = Column(String)                 # commercial_bank, microfinance_institution, etc.
     ownership_summary = Column(Text, nullable=True)
-    international_stakeholders = Column(JSON, nullable=True)  # list of strings
+    shareholders = Column(JSON, nullable=True)                # list of equity investors/owners
+    international_stakeholders = Column(JSON, nullable=True)  # list of lenders, guarantors, other stakeholders
     dfi_backed = Column(Boolean, nullable=True)
     estimated_asset_size = Column(String, nullable=True)
     business_model_summary = Column(Text, nullable=True)
@@ -133,6 +134,7 @@ class TargetInstitutionResponse(BaseModel):
     institution_name: Optional[str] = None
     type: Optional[str] = None
     ownership_summary: Optional[str] = None
+    shareholders: Optional[list] = None
     international_stakeholders: Optional[list] = None
     dfi_backed: Optional[bool] = None
     estimated_asset_size: Optional[str] = None

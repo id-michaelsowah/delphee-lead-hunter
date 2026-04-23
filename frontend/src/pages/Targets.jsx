@@ -75,9 +75,15 @@ function InstitutionRow({ inst, onUpdate }) {
             <div style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>{inst.relevance_notes}</div>
           )}
 
+          {inst.shareholders?.length > 0 && (
+            <div style={{ fontSize: 12, color: '#374151' }}>
+              <span style={{ color: '#0098E4', fontWeight: 600 }}>Shareholders:</span> {inst.shareholders.join(', ')}
+            </div>
+          )}
+
           {inst.international_stakeholders?.length > 0 && (
             <div style={{ fontSize: 12, color: '#374151' }}>
-              <span style={{ color: '#0098E4', fontWeight: 600 }}>Stakeholders:</span> {inst.international_stakeholders.join(', ')}
+              <span style={{ color: '#0098E4', fontWeight: 600 }}>Other Stakeholders:</span> {inst.international_stakeholders.join(', ')}
             </div>
           )}
 
