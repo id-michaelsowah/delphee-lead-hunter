@@ -18,6 +18,7 @@ const STATUS_COLOR = { New: '#6b7280', Contacted: '#0284c7', Qualified: '#15803d
 function InstitutionRow({ inst, onUpdate }) {
   const [status, setStatus] = useState(inst.status || 'New')
   const [notes, setNotes] = useState(inst.notes || '')
+  const [notesDirty, setNotesDirty] = useState(false)
   const [savingNotes, setSavingNotes] = useState(false)
 
   const handleStatusChange = async (e) => {
@@ -28,9 +29,9 @@ function InstitutionRow({ inst, onUpdate }) {
   }
 
   const handleNotesSave = async () => {
-    if (notes === (inst.notes || '')) return
     setSavingNotes(true)
     const updated = await updateTarget(inst.id, { notes }).finally(() => setSavingNotes(false))
+    setNotesDirty(false)
     onUpdate(updated)
   }
 
@@ -107,10 +108,10 @@ function InstitutionRow({ inst, onUpdate }) {
                 {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>Notes:</span>
             <textarea
               value={notes}
-              onChange={e => setNotes(e.target.value)}
-              onBlur={handleNotesSave}
+              onChange={e => { setNotes(e.target.value); setNotesDirty(true) }}
               placeholder="Add notes..."
               rows={2}
               style={{
@@ -120,6 +121,11 @@ function InstitutionRow({ inst, onUpdate }) {
                 outline: 'none', boxSizing: 'border-box',
               }}
             />
+            {notesDirty && !savingNotes && (
+              <button className="btn btn-sm btn-secondary" style={{ marginTop: 2, alignSelf: 'flex-start' }} onClick={handleNotesSave}>
+                Save notes
+              </button>
+            )}
             {savingNotes && <span style={{ fontSize: 11, color: '#9ca3af' }}>Saving...</span>}
           </div>
 
